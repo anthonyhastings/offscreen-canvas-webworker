@@ -7,24 +7,36 @@ type CustomWorkerGlobalScope = {
   postMessage(message: WorkerResponseMessage): void;
 };
 
+/**
+ * Processes an image file by resizing it to a constrained width
+ * and height then returning the processed image file.
+ *
+ * @param image The image file to process.
+ */
 const processImage = async (image: File) => {
   console.time('Worker::processImage');
+
+  // Convert the image file to an ImageBitmap.
   const bitmap = await createImageBitmap(image);
 
+  // Determine the constrained dimensions to use.
   const { width, height } = getConstrainedDimensions(
     bitmap.width,
     bitmap.height,
   );
 
+  // Use the OffscreenCanvas API to draw the image onto a sized canvas.
   const offscreenCanvas = new OffscreenCanvas(width, height);
   const ctx = offscreenCanvas.getContext('2d');
   ctx?.drawImage(bitmap, 0, 0, width, height);
 
+  // Export the the canvas content to a Blob with slightly reduced quality.
   const canvasBlob = await offscreenCanvas.convertToBlob({
     type: image.type,
     quality: 0.8,
   });
 
+  // Create a new File instance from the canvas Blob.
   const processedImage = new File([canvasBlob!], image.name, {
     type: image.type,
   });
@@ -50,6 +62,13 @@ const processImage = async (image: File) => {
   return processedImage;
 };
 
+/**
+ * Listens for messages from the main thread and processes the
+ * them accordingly and posting the result back
+ *
+ * 'PROCESS_IMAGE'   - Triggers the image processing functionality.
+ *                     Processed image is sent back to the main thread.
+ */
 self.addEventListener(
   'message',
   async (event: MessageEvent<WorkerRequestMessage>) => {
@@ -81,4 +100,5 @@ self.addEventListener(
   },
 );
 
+// Notify the main thread that the worker is ready to process messages.
 (self as CustomWorkerGlobalScope).postMessage({ type: 'WORKER_READY' });
