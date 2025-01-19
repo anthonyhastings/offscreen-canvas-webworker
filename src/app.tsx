@@ -29,6 +29,12 @@ export const App = () => {
 
   const [shouldProcessImage, setShouldProcessImage] = useState(true);
 
+  /**
+   * Adds chosen photos to the photo stack along with it's metadata.
+   * Conditionally processes the image and sets state again.
+   *
+   * @param fileList The list of files the user has chosen
+   */
   const onFilesAdded = ((fileList: FileList) => {
     if (!shouldProcessImage) {
       return Array.from(fileList).forEach(async (file) => {
@@ -91,6 +97,13 @@ export const App = () => {
     });
   }) satisfies FileTriggerProps['onFilesAdded'];
 
+  /**
+   * Deletes a photo from the photo stack and revokes it's
+   * Object URL if it exists to prevent memory leaks. The
+   * resulting photo stack is then set as the new state.
+   *
+   * @param id The ID of the photo in the stack to delete
+   */
   const onDeletePhoto = ((id: string) => {
     setPhotoStack((prevStack) => {
       const photoForRemoval = prevStack.get(id);
